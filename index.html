@@ -95,6 +95,7 @@ input{font-family:var(--f-data);font-size:.9rem;padding:6px 8px;border:1px solid
 table{border-collapse:collapse;width:100%;font-size:.82rem}
 th,td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{text-align:left}
+td+td{white-space:nowrap}
 th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 td{font-family:var(--f-data)}
 .foot{font-size:.75rem;color:var(--muted);margin:0}
@@ -390,17 +391,65 @@ function renderSpar(){
   '<dt>Kumulierte Abweichung ab Okt 2026</dt><dd>'+(ist.length?(kum>=0?"+":"")+eur(kum):"noch kein Monat mit Soll")+'</dd>'+
   '<dt>Nächster Eintrag</dt><dd>'+(next?next.monat:"–")+'</dd></dl>';
 }
+/* Monatsweise Simulation bis zum Ziel: Wert * (1+r) + Sparrate */
+function simulate(v0,rate,start,goal,ret){
+  var r=Math.pow(1+ret,1/12)-1,v=v0,path=[{m:0,v:v}],n=0;
+  while(v<goal&&n<480){v=v*(1+r)+rate;n++;path.push({m:n,v:v})}
+  var dt=new Date(start.getFullYear(),start.getMonth()+Math.max(0,n-1),1); /* Einzahlung zum Monatsende: Monat n ist Monat start+n-1 */
+  return {n:n,date:dt,path:path,start:start};
+}
+function monthYear(dt){return dt.toLocaleDateString("de-DE",{month:"short",year:"numeric"})}
+function monthsBetween(a,b){return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())}
+function istRate(){
+  var rows=((D.snap&&D.snap.sparplan)||[]).filter(function(r){return r.ueberschuss!=null}).slice(-3);
+  if(!rows.length)return null;
+  return {rate:rows.reduce(function(a,r){return a+r.ueberschuss},0)/rows.length,
+    label:rows.map(function(r){return r.monat.slice(0,3)}).join("–")};
+}
+function pathChart(series,goal,start,end){
+  var W=460,H=200,L=46,R=10,T=12,B=26;
+  var span=Math.max(1,monthsBetween(start,end)),max=goal*1.08,min=Math.min.apply(null,series.map(function(s){return s.sim.path[0].v}))*0.9;
+  var sx=function(dt){return L+(W-L-R)*monthsBetween(start,dt)/span},sy=function(v){return T+(H-T-B)*(1-(v-min)/(max-min))};
+  var g='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Pfad bis 500.000 €">';
+  [200000,300000,400000,500000].forEach(function(t){if(t<min)return;g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+sy(t)+'" y2="'+sy(t)+'" stroke="var(--line)"'+(t===goal?' stroke-width="1.5" stroke-dasharray="5 4"':'')+'/><text x="'+(L-6)+'" y="'+(sy(t)+4)+'" text-anchor="end">'+(t/1000)+'k</text>'});
+  for(var y=start.getFullYear()+1;y<=end.getFullYear();y++){var dt=new Date(y,0,1);if(monthsBetween(start,dt)%1===0&&(y-start.getFullYear())%2===1)g+='<text x="'+sx(dt)+'" y="'+(H-6)+'" text-anchor="middle">'+y+'</text>'}
+  series.forEach(function(s){
+    var pts=s.sim.path.map(function(p){var dt=new Date(s.sim.start.getFullYear(),s.sim.start.getMonth()+p.m,1);return sx(dt).toFixed(1)+","+sy(Math.min(p.v,max)).toFixed(1)}).join(" ");
+    g+='<polyline points="'+pts+'" fill="none" stroke="'+s.c+'" stroke-width="2.5"'+(s.dash?' stroke-dasharray="6 4"':'')+' stroke-linejoin="round"/>';
+    var ex=sx(s.sim.date);g+='<circle cx="'+ex+'" cy="'+sy(goal)+'" r="4.5" fill="'+s.c+'"/>';
+  });
+  var now=series[series.length-1].sim;g+='<circle cx="'+sx(now.start)+'" cy="'+sy(now.path[0].v)+'" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+  return g+'</svg>';
+}
 function renderZiel(d){
   var el=body("#p-ziel"),p=puffer();
   if(!d){el.innerHTML='<div class="empty">Kein Snapshot.</div>';return}
   var z=D.rules.zielpfad,ges=d.total+(p||0),exp=expectedToday(),diff=ges-exp,prog=ges/z.ziel;
+  var sd=new Date(z.startDatum),basisStart=new Date(sd.getFullYear(),sd.getMonth()+1,1);
+  var snapD=new Date(D.snap.stand),nowStart=new Date(snapD.getFullYear(),snapD.getMonth()+1,1);
+  var basis=simulate(z.startWert,z.sparrate,basisStart,z.ziel,z.rendite);
+  var kurs=simulate(ges,z.sparrate,nowStart,z.ziel,z.rendite);
+  var ir=istRate(),trend=ir?simulate(ges,ir.rate,nowStart,z.ziel,z.rendite):null;
+  var today=new Date(),rest=monthsBetween(today,basis.date);
+  function delta(sim){var m=monthsBetween(basis.date,sim.date);return m===0?"wie Basisfall":(m>0?"+"+m+" Mon. später":Math.abs(m)+" Mon. früher")}
+  function col(sim){var m=monthsBetween(basis.date,sim.date);return m>0?"var(--crit)":m<0?"var(--ok)":"var(--ink)"}
+  var end=new Date(Math.max(basis.date,trend?trend.date:basis.date,kurs.date));end=new Date(end.getFullYear(),end.getMonth()+3,1);
+  var series=[{sim:basis,c:"var(--muted)",dash:true}];if(trend)series.push({sim:trend,c:"var(--accent)"});
+  var kursM=monthsBetween(basis.date,kurs.date),rateM=trend?monthsBetween(kurs.date,trend.date):0;
   el.innerHTML='<div class="alloc" style="height:14px"><span style="width:'+Math.min(100,prog*100)+'%;background:var(--accent)"></span></div>'+
-  '<dl class="kv"><dt>Vermögen (Portfolio + Puffer)</dt><dd>'+eur(ges)+'</dd>'+
-  '<dt>Fortschritt zu '+eur(z.ziel)+'</dt><dd>'+pct(prog)+'</dd>'+
+  '<dl class="kv"><dt>Vermögen (Portfolio + Puffer)</dt><dd>'+eur(ges)+' · '+pct(prog)+'</dd>'+
   '<dt>Basisfall erwartet heute</dt><dd>'+eur(exp)+'</dd>'+
-  '<dt>Abweichung zum Basisfall</dt><dd style="color:'+(diff>=0?"var(--ok)":"var(--crit)")+'">'+(diff>=0?"+":"")+eur(diff)+'</dd>'+
-  '<dt>Ziel laut Basisfall</dt><dd>'+esc(z.zielDatum)+'</dd></dl>'+
-  '<p class="foot">Basisfall ab Startwert '+dDE(z.startDatum)+' ('+eur(z.startWert)+'). Die Abweichung ist bisher fast nur Kursbewegung.</p>';
+  '<dt>Abweichung zum Basisfall</dt><dd style="color:'+(diff>=0?"var(--ok)":"var(--crit)")+'">'+(diff>=0?"+":"")+eur(diff)+'</dd></dl>'+
+  '<div class="chart">'+pathChart(series,z.ziel,basisStart,end)+'</div>'+
+  '<div class="legend"><span><i style="background:var(--muted)"></i>Basisfall ('+eur(z.sparrate)+'/Mt)</span>'+(trend?'<span><i style="background:var(--accent)"></i>So weiter wie bisher ('+eur(ir.rate)+'/Mt)</span>':'')+'</div>'+
+  '<table><thead><tr><th>Szenario</th><th>500.000 € erreicht</th><th>ggü. Basis</th></tr></thead><tbody>'+
+  '<tr><td>Basisfall</td><td>'+monthYear(basis.date)+'</td><td>noch '+rest+' Mon.</td></tr>'+
+  '<tr><td>Heutiger Stand, Plan-Sparrate</td><td>'+monthYear(kurs.date)+'</td><td style="color:'+col(kurs)+'">'+delta(kurs)+'</td></tr>'+
+  (trend?'<tr><td>So weiter wie bisher</td><td>'+monthYear(trend.date)+'</td><td style="color:'+col(trend)+'">'+delta(trend)+'</td></tr>':'')+
+  '</tbody></table>'+
+  '<p class="foot">„So weiter wie bisher" startet beim heutigen Vermögen und spart mit dem Ø-Überschuss '+(ir?ir.label:"")+'. '+
+  'Davon gehen '+(kursM>=0?"+":"")+kursM+' Mon. auf die Kursentwicklung seit '+dDE(z.startDatum)+' und '+(rateM>=0?"+":"")+rateM+' Mon. auf die Sparrate. '+
+  'Alle Szenarien rechnen mit '+pct(z.rendite,0)+' p. a. auf das gesamte Vermögen, obwohl '+pct(d.spec,0)+' in Einzelwerten und Krypto stecken.</p>';
 }
 function renderPuffer(){
   var el=body("#p-puffer"),p=puffer(),min=D.rules.liquiditaet.pufferMin;
