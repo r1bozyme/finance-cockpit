@@ -1,1 +1,1 @@
-{"name":"Regel-Cockpit","short_name":"Cockpit","start_url":"./","display":"standalone","background_color":"#eef1f1","theme_color":"#0f6b63","lang":"de","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{"name": "Regel-Cockpit", "short_name": "Cockpit", "start_url": "./", "display": "standalone", "background_color": "#0f1514", "theme_color": "#0f1514", "lang": "de", "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}], "id": "./"}
