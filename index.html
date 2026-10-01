@@ -59,9 +59,24 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.03em}
 .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.crit{background:var(--crit-soft);color:var(--crit)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:16px}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:12px;min-width:0;align-content:start}
-.panel h2{font-size:1rem;font-weight:700;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.panel h2 small{font-weight:500;color:var(--muted);font-size:.78rem}
+.panel{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:12px;min-width:0;align-content:start}
+.panel h2,.panel h3{font-size:1rem;font-weight:700;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.panel h2 small,.panel h3 small{font-weight:500;color:var(--muted);font-size:.78rem}
+#main{display:grid;gap:28px}
+.group{display:grid;gap:12px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.ghead{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;margin:0;display:flex;align-items:center;gap:10px}
+.ghead::after{content:"";flex:1;height:1px;background:var(--line)}
+.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:6px;overflow-x:auto;padding-block:10px;margin-inline:-16px;padding-inline:16px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+.jump::-webkit-scrollbar{display:none}
+.jump a{flex:none;font-size:.8rem;font-weight:600;color:var(--ink);text-decoration:none;padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.jump a:hover,.jump a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.jump a.on{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+a.chip{text-decoration:none;color:inherit;cursor:pointer}
+a.chip:hover{border-color:var(--accent)}
+.meter{position:relative;height:14px;border-radius:7px;background:var(--track);overflow:visible}
+.meter span{display:block;height:100%;border-radius:7px}
+.meter i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 .kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:.85rem;margin:0}
 .kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-data);font-variant-numeric:tabular-nums;text-align:right}
 .err{font-size:.82rem;color:var(--crit);background:var(--crit-soft);border-radius:8px;padding:8px 10px}
@@ -112,26 +127,55 @@ td{font-family:var(--f-data)}
   </form>
 
   <div id="main">
-    <section class="status" id="status" aria-label="Regelstatus"></section>
-    <div class="grid" style="margin-top:16px">
-      <section class="panel" id="p-nio"><h2>NIO-Verkaufsleiter <small>Kurs in USD, log. Skala</small></h2><div class="body"></div></section>
-      <section class="panel" id="p-week"><h2>NIO-Wochenschlüsse <small>Stufe-0-Prüfung</small></h2><div class="body"></div></section>
-      <section class="panel" id="p-alloc"><h2>Konzentration <small>ohne Cash</small></h2><div class="body"></div></section>
-      <section class="panel" id="p-spar"><h2>Sparrate Soll / Ist <small>Überschuss pro Monat</small></h2><div class="body"></div></section>
-      <section class="panel" id="p-ziel">
-        <h2>Zielpfad 500.000 € <small>Basisfall 1.540 €/Mt · 7 % p. a.</small></h2>
-        <form class="row" id="puffer-form">
-          <label for="puffer">Girokonto-Puffer (€)</label>
-          <input id="puffer" type="number" inputmode="decimal" step="50" min="0">
-          <button type="submit" id="puffer-save">Speichern</button>
-          <span class="foot" id="puffer-msg"></span>
-        </form>
-        <div class="body"></div>
-      </section>
-      <section class="panel" id="p-baba"><h2>BABA-Leiter <small>Kurs in EUR</small></h2><div class="body"></div></section>
-      <section class="panel" id="p-rules"><h2>Termine &amp; Backstops</h2><div class="body"></div></section>
-    </div>
-    <p class="foot" style="margin-top:16px" id="source-note"></p>
+    <nav class="jump" aria-label="Bereiche">
+      <a href="#g-status">Status</a><a href="#g-vermoegen">Vermögen</a><a href="#g-liquiditaet">Liquidität &amp; Sparen</a><a href="#g-positionen">Positionen</a><a href="#g-termine">Termine</a>
+    </nav>
+
+    <section class="group" id="g-status">
+      <h2 class="ghead">Was gerade gilt</h2>
+      <div class="status" id="status" aria-label="Regelstatus"></div>
+    </section>
+
+    <section class="group" id="g-vermoegen">
+      <h2 class="ghead">Vermögen</h2>
+      <div class="grid">
+        <section class="panel" id="p-ziel"><h3>Zielpfad 500.000 € <small>Basisfall 1.540 €/Mt · 7 % p. a.</small></h3><div class="body"></div></section>
+        <section class="panel" id="p-alloc"><h3>Konzentration <small>ohne Cash</small></h3><div class="body"></div></section>
+      </div>
+    </section>
+
+    <section class="group" id="g-liquiditaet">
+      <h2 class="ghead">Liquidität &amp; Sparen</h2>
+      <div class="grid">
+        <section class="panel" id="p-puffer">
+          <h3>Girokonto-Puffer <small>Schwelle 12.000 €</small></h3>
+          <form class="row" id="puffer-form">
+            <label for="puffer">Kontostand (€)</label>
+            <input id="puffer" type="number" inputmode="decimal" step="50" min="0">
+            <button type="submit" id="puffer-save">Speichern</button>
+            <span class="foot" id="puffer-msg"></span>
+          </form>
+          <div class="body"></div>
+        </section>
+        <section class="panel" id="p-spar"><h3>Sparrate Soll / Ist <small>Überschuss pro Monat</small></h3><div class="body"></div></section>
+      </div>
+    </section>
+
+    <section class="group" id="g-positionen">
+      <h2 class="ghead">Positionen</h2>
+      <div class="grid">
+        <section class="panel" id="p-nio"><h3>NIO-Verkaufsleiter <small>Kurs in USD, log. Skala</small></h3><div class="body"></div></section>
+        <section class="panel" id="p-week"><h3>NIO-Wochenschlüsse <small>Stufe-0-Prüfung</small></h3><div class="body"></div></section>
+        <section class="panel" id="p-baba"><h3>BABA-Leiter <small>Kurs in EUR</small></h3><div class="body"></div></section>
+      </div>
+    </section>
+
+    <section class="group" id="g-termine">
+      <h2 class="ghead">Termine &amp; Backstops</h2>
+      <section class="panel" id="p-rules"><div class="body"></div></section>
+    </section>
+
+    <p class="foot" id="source-note"></p>
   </div>
 </div>
 
@@ -251,22 +295,22 @@ function expectedToday(){
 }
 
 /* ─── Darstellung ─── */
-function chip(lbl,val,note,s,pill){return '<div class="chip" data-s="'+(s||"")+'"><span class="lbl">'+esc(lbl)+'</span><span class="val">'+val+'</span>'+(pill?"<span>"+pill+"</span>":"")+'<span class="note">'+note+'</span></div>'}
+function chip(lbl,val,note,s,pill,href){return '<'+(href?'a href="'+href+'"':'div')+' class="chip" data-s="'+(s||"")+'"><span class="lbl">'+esc(lbl)+'</span><span class="val">'+val+'</span>'+(pill?"<span>"+pill+"</span>":"")+'<span class="note">'+note+'</span></'+(href?'a':'div')+'>'}
 function body(id){return document.querySelector(id+" .body")}
 
 function renderStatus(d){
   var R=D.rules,out=[],p=puffer();
-  if(p==null)out.push(chip("Liquiditätsregel","–","Puffer im Zielpfad-Panel eintragen.","",""));
+  if(p==null)out.push(chip("Liquiditätsregel","–","Puffer unter Liquidität eintragen.","","","#p-puffer"));
   else{var act=p<R.liquiditaet.pufferMin;
-    out.push(chip("Liquiditätsregel",eur(p),act?"Unter "+eur(R.liquiditaet.pufferMin)+": keine Einzelaktien-Zukäufe. ETF-Sparplan läuft weiter. Es fehlen "+eur(R.liquiditaet.pufferMin-p)+".":"Über "+eur(R.liquiditaet.pufferMin)+": Zukäufe regelkonform möglich.",act?"warn":"ok",act?'<span class="pill warn">aktiv</span>':'<span class="pill ok">inaktiv</span>'))}
+    out.push(chip("Liquiditätsregel",eur(p),act?"Unter "+eur(R.liquiditaet.pufferMin)+": keine Einzelaktien-Zukäufe. ETF-Sparplan läuft weiter. Es fehlen "+eur(R.liquiditaet.pufferMin-p)+".":"Über "+eur(R.liquiditaet.pufferMin)+": Zukäufe regelkonform möglich.",act?"warn":"ok",act?'<span class="pill warn">aktiv</span>':'<span class="pill ok">inaktiv</span>',"#p-puffer"))}
   var dec=R.termine.find(function(t){return t.art==="entscheidung"});
   var s0=stufe0(),dd=dec?days(new Date(dec.datum+"T11:00:00+02:00")):null;
   var s0note=R.nio.stufe0.status+". "+(dec&&dd>=0?"Entscheidung "+dDE(dec.datum)+", noch "+dd+" "+(dd===1?"Tag":"Tage")+".":"Entscheidungstermin vorbei. Regelwerk nachziehen.");
   if(s0.weeks.length) s0note+=s0.both?" Letzte zwei Wochenschlüsse weiter unter $4,38.":" Letzter Wochenschluss nicht mehr unter beiden Schwellen.";
-  out.push(chip("NIO Stufe 0",d?usd(d.nio.kursEur*d.fx):"–",s0note,"crit",'<span class="pill crit">offen</span>'));
+  out.push(chip("NIO Stufe 0",d?usd(d.nio.kursEur*d.fx):"–",s0note,"crit",'<span class="pill crit">offen</span>',"#p-nio"));
   if(d){var over=d.china>R.chinaAdrMax;
-    out.push(chip("China-ADR-Anteil",pct(d.china),"NIO + BABA, Grenze "+pct(R.chinaAdrMax,0)+". "+(over?"TOR 3 rot, kein BABA-Nachkauf.":"Unter der Grenze."),over?"warn":"ok",over?'<span class="pill warn">über Grenze</span>':'<span class="pill ok">im Rahmen</span>'));
-    out.push(chip("Spekulativer Anteil",pct(d.spec),"NIO, BABA, GRAB, Krypto. Der 7-%-Pfad unterstellt einen breiten Markt.",d.spec>0.4?"warn":"ok",""))}
+    out.push(chip("China-ADR-Anteil",pct(d.china),"NIO + BABA, Grenze "+pct(R.chinaAdrMax,0)+". "+(over?"TOR 3 rot, kein BABA-Nachkauf.":"Unter der Grenze."),over?"warn":"ok",over?'<span class="pill warn">über Grenze</span>':'<span class="pill ok">im Rahmen</span>',"#p-alloc"));
+    out.push(chip("Spekulativer Anteil",pct(d.spec),"NIO, BABA, GRAB, Krypto. Der 7-%-Pfad unterstellt einen breiten Markt.",d.spec>0.4?"warn":"ok","","#p-alloc"))}
   $("#status").innerHTML=out.join("");
 }
 function ladderSvg(points,cur,min,max,log,fmt){
@@ -346,8 +390,6 @@ function renderSpar(){
 }
 function renderZiel(d){
   var el=body("#p-ziel"),p=puffer();
-  var inp=$("#puffer");if(document.activeElement!==inp)inp.value=p==null?"":p;
-  if(D.state&&D.state.puffer&&!$("#puffer-msg").textContent)$("#puffer-msg").textContent="Stand "+dDE(D.state.puffer.geaendert);
   if(!d){el.innerHTML='<div class="empty">Kein Snapshot.</div>';return}
   var z=D.rules.zielpfad,ges=d.total+(p||0),exp=expectedToday(),diff=ges-exp,prog=ges/z.ziel;
   el.innerHTML='<div class="alloc" style="height:14px"><span style="width:'+Math.min(100,prog*100)+'%;background:var(--accent)"></span></div>'+
@@ -357,6 +399,18 @@ function renderZiel(d){
   '<dt>Abweichung zum Basisfall</dt><dd style="color:'+(diff>=0?"var(--ok)":"var(--crit)")+'">'+(diff>=0?"+":"")+eur(diff)+'</dd>'+
   '<dt>Ziel laut Basisfall</dt><dd>'+esc(z.zielDatum)+'</dd></dl>'+
   '<p class="foot">Basisfall ab Startwert '+dDE(z.startDatum)+' ('+eur(z.startWert)+'). Die Abweichung ist bisher fast nur Kursbewegung.</p>';
+}
+function renderPuffer(){
+  var el=body("#p-puffer"),p=puffer(),min=D.rules.liquiditaet.pufferMin;
+  var inp=$("#puffer");if(document.activeElement!==inp)inp.value=p==null?"":p;
+  if(D.state&&D.state.puffer&&!$("#puffer-msg").textContent)$("#puffer-msg").textContent="Stand "+dDE(D.state.puffer.geaendert);
+  if(p==null){el.innerHTML='<div class="empty">Noch kein Kontostand eingetragen.</div>';return}
+  var scale=Math.max(min*1.25,p),act=p<min;
+  el.innerHTML='<div class="meter" role="img" aria-label="Puffer gegen Schwelle"><span style="width:'+Math.min(100,p/scale*100)+'%;background:'+(act?"var(--warn)":"var(--ok)")+'"></span><i style="left:'+(min/scale*100)+'%"></i></div>'+
+  '<dl class="kv"><dt>Puffer</dt><dd>'+eur(p)+'</dd><dt>Schwelle</dt><dd>'+eur(min)+'</dd>'+
+  '<dt>'+(act?"Es fehlen":"Überschuss über Schwelle")+'</dt><dd style="color:'+(act?"var(--warn)":"var(--ok)")+'">'+eur(Math.abs(min-p))+'</dd>'+
+  '<dt>Einzelaktien-Zukäufe</dt><dd>'+(act?"pausiert":"erlaubt")+'</dd></dl>'+
+  '<p class="foot">'+esc(D.rules.liquiditaet.regel)+'.</p>';
 }
 function renderRules(){
   var all=D.rules.termine.slice().sort(function(a,b){return a.datum.localeCompare(b.datum)});
@@ -376,10 +430,14 @@ function render(){
   renderFresh();
   if(!D.rules||!D.snap){$("#status").innerHTML=D.err?'<div class="err">'+esc(D.err)+'</div>':"";return}
   var d=derive();
-  renderStatus(d);renderNio(d);renderWeek();renderAlloc(d);renderSpar();renderZiel(d);renderBaba(d);renderRules();
+  renderStatus(d);renderZiel(d);renderAlloc(d);renderPuffer();renderSpar();renderNio(d);renderWeek();renderBaba(d);renderRules();
   $("#source-note").textContent="Daten aus dem privaten Repo: Positionen und Kurse aus Parqet, Ist-Werte aus dem Finanz-Tracker, Regeln Stand "+dDE(D.rules.stand)+". Snapshot werktags abends, Wochenschluss samstags früh.";
 }
 render();load();
+/* Sprungleiste: aktiven Bereich markieren */
+(function(){var links=[].slice.call(document.querySelectorAll(".jump a"));if(!("IntersectionObserver" in window))return;
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id)})}})},{rootMargin:"-30% 0px -60% 0px"});
+  document.querySelectorAll(".group").forEach(function(g){io.observe(g)})})();
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&configured())load()});
 })();
 </script>
