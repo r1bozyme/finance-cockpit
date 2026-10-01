@@ -75,6 +75,9 @@ a.chip:hover{border-color:var(--accent)}
 .meter i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 @media (display-mode:standalone),(display-mode:fullscreen){.wrap{padding-block-start:6px}}
+/* Statusleiste: Inhalt läuft dahinter, ein leicht milchiger Schleier hält Uhrzeit und Akku lesbar */
+.sbar{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);z-index:20;pointer-events:none;
+  background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
 .kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:.85rem;margin:0}
 .kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-data);font-variant-numeric:tabular-nums;text-align:right}
 .err{font-size:.82rem;color:var(--crit);background:var(--crit-soft);border-radius:8px;padding:8px 10px}
@@ -103,6 +106,7 @@ td{font-family:var(--f-data)}
 </style>
 </head>
 <body>
+<div class="sbar" aria-hidden="true"></div>
 <div class="wrap">
   <header>
     <div>
